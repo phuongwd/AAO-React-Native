@@ -16,7 +16,7 @@ export function buildFilters(newsItems: StoryType[]): FilterType[] {
 	return [
 		{
 			type: 'list',
-			key: 'stations',
+			key: 'categories',
 			enabled: false,
 			spec: {
 				title: 'Categories',
@@ -26,7 +26,7 @@ export function buildFilters(newsItems: StoryType[]): FilterType[] {
 				displayTitle: true,
 			},
 			apply: {
-				key: 'station',
+				key: 'categories',
 			},
 		},
 	]
