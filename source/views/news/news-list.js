@@ -1,9 +1,9 @@
 // @flow
 import * as React from 'react'
-import {StyleSheet, FlatList} from 'react-native'
+import {StyleSheet, SectionList} from 'react-native'
 import * as c from '@frogpond/colors'
 import type {StoryType} from './types'
-import {ListSeparator} from '@frogpond/lists'
+import {ListSeparator, ListSectionHeader} from '@frogpond/lists'
 import {applyFiltersToItem, type FilterType} from '@frogpond/filter'
 import {NoticeView} from '@frogpond/notice'
 import type {TopLevelViewPropsType} from '../types'
@@ -70,38 +70,40 @@ export class NewsList extends React.PureComponent<Props> {
 		return openUrl(url)
 	}
 
-	// 	groupNewsData = (args: {
-	// 		filters: Array<FilterType>,
-	// 		categories: Array<String>,
-	// 		entries: Array<StoryType>,
-	// 		applyFilters: FilterFunc,
-	// 	}) => {
-	// 		let {applyFilters, entries, categories, filters} = args
-	//
-	// 		let dereferenceNewsStories = story =>
-	// 			story.categories
-	// 				// Dereference each news item
-	// 				.map(id => entries[id])
-	// 				// Ensure that the referenced story items exist,
-	// 				// and apply the selected filters to the stories in the feed
-	// 				.filter(item => item && applyFilters(filters, item))
-	//
-	// 		let storiesWithItems: Array<{title: string, data: Array<StoryType>}> = categories
-	// 			// We're grouping the story entries in a [label, Array<items>] tuple.
-	// 			.map(category => [category.label, dereferenceNewsStories(category)])
-	// 			// We only want to show categories with at least one item in them
-	// 			.filter(([_, items]) => items.length)
-	// 			// We need to map the tuples into objects for SectionList // todo: ???
-	// 			.map(([title, data]) => ({title, data}))
-	//
-	// 		return storiesWithItems
-	// 	}
+	groupNewsData = (args: {
+		filters: Array<FilterType>,
+		categoryLabels: Array<String>,
+		newsStories: Array<StoryType>,
+		applyFilters: FilterFunc,
+	}) => {
+		let {filters, categoryLabels, newsStories, applyFilters} = args
+
+		let dereferenceNewsStories = stories =>
+			stories.filter(item => item && applyFilters(filters, item))
+
+		let allCategoriesWithStoriesWithItems: Array<{
+			title: string,
+			data: Array<StoryType>,
+		}> = categoryLabels
+			// We're grouping the story entries in a [label, Array<items>] tuple.
+			.map(category => [category, dereferenceNewsStories(newsStories)])
+			// We only want to show categories with at least one item in them
+			.filter(([_, items]) => items.length)
+			// We need to map the tuples into objects for SectionList // todo: ???
+			.map(([title, data]) => ({title, data}))
+
+		return allCategoriesWithStoriesWithItems
+	}
 
 	renderSeparator = () => (
 		<ListSeparator
 			spacing={{left: this.props.thumbnail === false ? undefined : 101}}
 		/>
 	)
+
+	renderSectionHeader = ({section: {title}}: any) => {
+		return <ListSectionHeader title={title} />
+	}
 
 	renderItem = ({item}: {item: StoryType}) => (
 		<NewsRow
@@ -132,15 +134,16 @@ export class NewsList extends React.PureComponent<Props> {
 
 		const isOpen = Object.keys(this.state.entries).length !== 0
 
-		// const categories = flatten(entries.map(item => item.categories))
-		// const categoryLabels = uniq(categories)
+		const categoryLabels = uniq(
+			flatten(newsStories.map(item => item.categories)),
+		)
 
-		// let groupedNewsData = this.groupNewsData({
-		// 	categoryLabels,
-		// 	filters,
-		// 	applyFilters,
-		// 	entries,
-		// })
+		let groupedNewsData = this.groupNewsData({
+			filters,
+			categoryLabels,
+			newsStories,
+			applyFilters,
+		})
 
 		let header = (
 			<FilterToolbar
@@ -152,16 +155,19 @@ export class NewsList extends React.PureComponent<Props> {
 		)
 
 		return (
-			<FlatList
+			<SectionList
 				ItemSeparatorComponent={this.renderSeparator}
 				ListEmptyComponent={<NoticeView text="No news." />}
 				ListHeaderComponent={header}
-				data={newsStories}
+				data={filters}
 				keyExtractor={this.keyExtractor}
 				onRefresh={this.props.onRefresh}
 				refreshing={this.props.loading}
 				renderItem={this.renderItem}
+				renderSectionHeader={this.renderSectionHeader}
+				sections={(groupedNewsData: any)}
 				style={styles.listContainer}
+				windowSize={5}
 			/>
 		)
 	}
