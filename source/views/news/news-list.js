@@ -167,7 +167,6 @@ export class NewsList extends React.PureComponent<Props> {
 				renderSectionHeader={this.renderSectionHeader}
 				sections={(groupedNewsData: any)}
 				style={styles.listContainer}
-				windowSize={5}
 			/>
 		)
 	}
